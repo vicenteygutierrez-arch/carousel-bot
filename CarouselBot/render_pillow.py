@@ -82,12 +82,19 @@ PAD_BOTTOM = int(52 * SCALE)            # room for progress bar
 
 # ---------- Font loader ----------
 
-FONT_REG  = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-FONT_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-
 def f(size, bold=False):
-    path = FONT_BOLD if bold else FONT_REG
-    return ImageFont.truetype(path, int(size * SCALE))
+    """Load font with fallback to default if TrueType unavailable."""
+    paths = [
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",  # macOS
+        "/Windows/Fonts/arial.ttf",  # Windows
+    ]
+    for path in paths:
+        try:
+            return ImageFont.truetype(path, int(size * SCALE))
+        except:
+            pass
+    return ImageFont.load_default()
 
 # ---------- Helpers ----------
 
