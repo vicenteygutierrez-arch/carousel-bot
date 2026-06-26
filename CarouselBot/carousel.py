@@ -106,13 +106,33 @@ def generar_desde_texto(prompt: str, plataforma: str = "instagram") -> dict:
 
 
 def generar_desde_foto(image_bytes: bytes, caption: str, plataforma: str = "instagram") -> dict:
-    info   = PLATFORMS.get(plataforma, PLATFORMS["instagram"])
+    """Analiza foto con Claude Vision y genera carrusel."""
+    if not image_bytes:
+        return generar_desde_texto(caption or "carousel", plataforma)
+
+    info = PLATFORMS.get(plataforma, PLATFORMS["instagram"])
+
+    # Detectar formato de imagen
+    media_type = "image/jpeg"
+    if image_bytes.startswith(b'\x89PNG'):
+        media_type = "image/png"
+    elif image_bytes.startswith(b'\xff\xd8\xff'):
+        media_type = "image/jpeg"
+    elif image_bytes.startswith(b'GIF'):
+        media_type = "image/gif"
+
     img_b64 = base64.standard_b64encode(image_bytes).decode()
-    return _llamar_claude([{"role": "user", "content": [
-        {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": img_b64}},
-        {"type": "text", "text":
-            f"Analiza esta imagen y crea un carrusel para {info['name']} ({info['ratio']}).\n"
-            f"Contexto del usuario: {caption or 'ninguno'}\n"
-            "Crea contenido relevante a lo que se ve en la imagen."
-        }
-    ]}])
+
+    try:
+        return _llamar_claude([{"role": "user", "content": [
+            {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_b64}},
+            {"type": "text", "text":
+                f"Analiza DETENIDAMENTE esta imagen y crea un carrusel para {info['name']} ({info['ratio']}).\n"
+                f"Contexto/solicitud del usuario: {caption or 'Crear contenido basado en la imagen'}\n"
+                f"IMPORTANTE: El carrusel DEBE estar diseñado específicamente alrededor de lo que ves en la imagen.\n"
+                "Crea contenido profesional, atractivo y relevante a esta imagen específica."
+            }
+        ]}])
+    except Exception as e:
+        print(f"[VISION] Error analizando foto: {e}")
+        return generar_desde_texto(caption or "carousel", plataforma)

@@ -110,8 +110,14 @@ async def seleccionar_plataforma(update: Update, context: ContextTypes.DEFAULT_T
     contenido = context.user_data.get("pending_content", "")
     foto_bytes = context.user_data.get("pending_photo")
     msg = await query.edit_message_text("⏳")
+    print(f"[DEBUG] tipo={tipo}, foto_bytes={len(foto_bytes) if foto_bytes else None} bytes, contenido={contenido[:50]}")
     try:
-        datos = generar_desde_foto(foto_bytes, contenido, plataforma) if tipo == "photo" and foto_bytes else generar_desde_texto(contenido, plataforma)
+        if tipo == "photo" and foto_bytes:
+            print(f"[DEBUG] Usando generar_desde_foto() con {len(foto_bytes)} bytes")
+            datos = generar_desde_foto(foto_bytes, contenido, plataforma)
+        else:
+            print(f"[DEBUG] Usando generar_desde_texto() con '{contenido}'")
+            datos = generar_desde_texto(contenido, plataforma)
         await enviar_carrusel(update, datos, user["brand_color"], plataforma)
         db.increment_usage(tid, contenido or "foto", plataforma)
         await msg.delete()
